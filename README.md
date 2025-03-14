@@ -35,14 +35,14 @@ The basic trading strategy implements:
 
 ## Project Structure
 AlgyAlgo/
-├── idea/
-│ └── main.tex
-├── images/
-│ ├── inputDeltaChart.png
-│ ├── networkDiagram.png
-│ └── tradingStrat.png
-└── ref/
-└── ref.bib
+├── idea/ \
+│ └── main.tex \
+├── images/ \
+│ ├── inputDeltaChart.png \
+│ ├── networkDiagram.png \
+│ └── tradingStrat.png \
+└── ref/ \
+└── ref.bib \
 
 ## Requirements
 - LaTeX environment
