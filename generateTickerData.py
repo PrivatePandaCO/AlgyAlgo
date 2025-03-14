@@ -18,4 +18,4 @@ while START_TIME < END_TIME:
 
 data = [[i[0], float(i[1]), float(i[2]), float(i[3]), float(i[4]), float(i[5]), i[8]] for i in data]
 
-json.dump(data, open("data.json", "w"), indent=4)
+json.dump(data, open("data/data.json", "w"), indent=4)
