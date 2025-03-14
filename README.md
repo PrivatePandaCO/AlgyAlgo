@@ -21,17 +21,17 @@ Where:
 - Xᵢ is normalized between -0.95 and 0.95
 
 ### Price Prediction Formulas
-$c_{i+1} = 2c_i λ_c (y_2 - 0.5) + c_i$ # Predicted close
-$h_{i+1} = c_{i+1} + c_i λ_h y_1$ # Predicted high
-$l_{i+1} = c_{i+1} + c_i λ_l y_3$ # Predicted low
+$$c_{i+1} = 2c_i λ_c (y_2 - 0.5) + c_i$$ # Predicted close
+$$h_{i+1} = c_{i+1} + c_i λ_h y_1$$ # Predicted high
+$$l_{i+1} = c_{i+1} + c_i λ_l y_3$$ # Predicted low
 
 ## Trading Strategy
 The basic trading strategy implements:
 1. Buy when predicted close > opening price
 2. Sell when predicted close < opening price
 3. Implements stop-loss protection using:
-   - Buy Stop = $o_{i+1} - c_i * StopLoss%$
-   - Sell Stop = $o_{i+1} + c_i * StopLoss%$
+   - Buy Stop = $o_{i+1} - c_i * StopLoss\%$
+   - Sell Stop = $o_{i+1} + c_i * StopLoss\%$
 
 ## Project Structure
 AlgyAlgo/
