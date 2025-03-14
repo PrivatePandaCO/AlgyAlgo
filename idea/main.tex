@@ -1,0 +1,105 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{images/}
+\usepackage[style=apa]{biblatex}
+\addbibresource{ref/ref.bib}
+\usepackage{blindtext}
+
+\usepackage{subfiles} % Best loaded last in the preamble
+
+\title{Day Trading with a Price Prediction Model}
+\author{Clark}
+\date{ }
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents % Automatically generates the Table of Contents
+
+\clearpage
+
+\section{Intro}
+\subsection{Abstract}
+After exploring machine learning for prediction in sports parlays, we learned a lot. Now we look to develop a trading model for day trading$^{[t1]}$. At a high level, the architecture is simple: Pick a stock $\rightarrow$ feed in a number of candlesticks (in our initial model, it will be three candlesticks to generate ten $\Delta$'s) to the neural network $\rightarrow$ The neural network's 3 output nodes are computed into predicted close, high, and low for the given time frame (Note the time frame predicted is the same as the time frame of the candles used to compute $\Delta$ for input nodes and is one day for our initial model) $\rightarrow$ Close, high, and low are used in a trading strategy (simple strategy below). 
+
+\subsection{Plan}
+I want to develop an initial model and then gradually scale up the neural net to increase functionality and accuracy. There are two main parts to this initial model: the neural network and the trading strategy. I will build the neural network and produce accurate price predictions for a given day and stock ticker. The neural net will be built in a modular way, with a net being able to be constructed with any number of input nodes. However, the output nodes are intentionally pegged out to three: close, high, low. Parth will develop and build a trading strategy that recommends an effective maker or taker order. You are able to decide whether or not you would like to incorporate the predictions from multiple tickers. The amount to invest and risk tolerance. Assume a constant uncertainty with each price prediction from the model.
+
+\clearpage
+
+\section{Details}
+\subsection{Neural Net Specifics}
+There are three main components needed for our neural networks to function. We need to convert candle sticks to input nodes, determine an optimal number of nodes to have in the hidden layer, convert the output nodes to predicted closes, highs, and lows.
+\subsubsection{Structure}
+\paragraph{Input Nodes} Basic idea is to use daily change in price ($\Delta$), as depicted in Table, to predict the next day’s close, high, and low. For three days there are ten useful $\Delta$s that can be converted into input nodes as follows.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/inputDeltaChart.png}
+    \caption{How to calculate change in price for day}
+\end{figure}
+\begin{flalign}
+    \lambda &= \frac{2}{P} \sum_{i=1}^P \frac{|\Delta|}{c_i} \\
+    X_i &= \frac{\Delta}{c_i \lambda}
+\end{flalign}
+\noindent{where $X_i$ is the value, between -0.95 and 0.95, for $\Delta_i$ and $c_i$.}
+\\
+Once we have the input nodes, a number of nodes in the hidden layer, and 3 nodes in the output layer we can outline the network[Figure 2].
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\linewidth]{images/networkDiagram.png}
+    \caption{Outline of neural network similar to ours}
+\end{figure}
+
+\paragraph{Number of Nodes}
+The book (written in 1997) I have been referencing used sixteen. This is no longer believed to be optimal. In general, we only need one hidden layer and the number of neurons in that layer should be between the number of nodes in the input and output layers. I plan to use eight nodes and a bias in the hidden layer. This number may be raised. 
+\paragraph{Output Nodes to Prediction}
+There is an equation to convert each output node to a predicted close, high, or low. After training is completed, the net outputs predicted price levels can be found by computing the predicted close and then the predicted high and lows.
+$$c_{i+1}=2c_i\lambda_c(y_2-0.5)+c_i$$
+$$h_{i+1} = c_{i+1}+c_i\lambda_hy_1$$
+$$l_{i+1} = c_{i+1}+c_i\lambda_ly_3$$
+
+\subsubsection{Training}
+The neural networks output nodes give predicted price levels in the scale of the sigmoid function. To account for this our training data must be converted before being used in the loss function.
+$$d_{1,i} = min(max(\frac{h_{i+1}-c_{i+1}}{c_i\lambda_h}, 0.05), 0.95)$$ $$d_{2,i} = min(max(\frac{c_{i+1}-c_{i}}{c_i\lambda_c}, 0.05), 0.95)$$ $$d_{3,i} = min(max(\frac{c_{i+1}-l_{i+1}}{c_i\lambda_l}, 0.05), 0.95)$$
+To train the model a day before today will be selected for the specific stock we are training on. The appropriate candle sticks are fed in and the neural network with its current weights and biases will produce the three outputs. Those outputs will be compared against the real values in the loss function.
+\begin{align}
+    \text{Loss} &= \frac{1}{3N} \sum_{i=1}^N \bigg[ \left( \text{Predicted } d_{1,i} - \text{Actual } d_{1,i} \right)^2 \notag \\
+    &\quad + \left( \text{Predicted } d_{2,i} - \text{Actual } d_{2,i} \right)^2 \notag \\
+    &\quad + \left( \text{Predicted } d_{3,i} - \text{Actual } d_{3,i} \right)^2 \bigg]
+    \label{loss_function}
+\end{align}
+
+
+
+
+\subsection{Trading Strategy Specifics}
+\subsubsection{Example Strategy}
+According to \cite{zirilli2023}, neural networks can be used for financial prediction.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/tradingStrat.png}
+    \caption{Example Trading Strategy}
+\end{figure}
+This algorithm works as follows. If the predicted close is higher than the
+opening price (open), then buy the open and sell the close at the end of the day. If the predicted close is lower than the opening price (open), then sell the open and buy the close at the end of the day. If the prediction is right, you will close the position at the end of the day and make a profit. You must also protect against being wrong, which will happen. To do this, you will place a stop loss order above or below your entry price based on a percentage of the previous day’s close. If you are long, you will place a sell stop, if you are short, you will place a buy stop. We will call this parameter StopLoss\%. The formulas for calculating your stop loss price are given by Equation 1 and 2.
+
+\begin{align}
+    BuyStop &= o_{i+1} - c_i \cdot StopLoss\% \\
+    SellStop &= o_{i+1} + c_i \cdot StopLoss\%
+\end{align}
+
+\section{Terms}
+\begin{description}
+    \item[Day Trading:] buying and selling of securities on the same day, often online, on the basis of small, short-term price fluctuations.
+    \item[Neural Network:] connected units or nodes called artificial neurons, which loosely model the neurons in the brain.
+    \item[Candle:] element on a candlestick chart which displays the price movement of an asset over a specific period, showing the open, high, low, and closing prices.
+    \item[Price Prediction:] process of using data analysis and algorithms to forecast the future price of a product, service, or asset, often based on historical data.
+\end{description}
+
+\section{References}
+\printbibliography
+
+\end{document}
